@@ -213,6 +213,12 @@ function buildPrefsPane() {
     });
 
   doc
+    .querySelector(`#${makeId("hideUnconfiguredServices")}`)
+    ?.addEventListener("command", () => {
+      addon.hooks.onReaderTabPanelRefresh();
+    });
+
+  doc
     .querySelector(`#${makeId("sentenceServicesSecret")}`)
     ?.addEventListener("input", (e: Event) => {
       onPrefsEvents("updateSentenceSecret");

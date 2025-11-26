@@ -349,10 +349,14 @@ export class TranslatorPanel extends PluginCEBase {
    * Hides services that require API keys but haven't been configured.
    */
   _filterUnconfiguredServices() {
-    if (!getPref("hideUnconfiguredServices")) {
-      // Show all services if preference is disabled
-      const menuItems = this._queryID("services")?.querySelectorAll("menuitem");
-      menuItems?.forEach((item) => {
+    const menuPopup = this._queryID("services")?.querySelector("menupopup");
+    if (!menuPopup) return;
+
+    const menuItems = menuPopup.querySelectorAll("menuitem");
+    const hideUnconfigured = getPref("hideUnconfiguredServices") as boolean;
+
+    if (!hideUnconfigured) {
+      menuItems.forEach((item) => {
         (item as HTMLElement).hidden = false;
       });
       return;
@@ -365,13 +369,15 @@ export class TranslatorPanel extends PluginCEBase {
       secrets = {};
     }
 
-    const menuItems = this._queryID("services")?.querySelectorAll("menuitem");
-    menuItems?.forEach((item) => {
+    menuItems.forEach((item) => {
       const serviceId = item.getAttribute("value");
       if (!serviceId) return;
 
       const service = services.getServiceById(serviceId);
-      if (!service) return;
+      if (!service) {
+        (item as HTMLElement).hidden = false;
+        return;
+      }
 
       // Check if service requires configuration
       const needsSecret =
@@ -380,7 +386,6 @@ export class TranslatorPanel extends PluginCEBase {
         serviceId.startsWith("custom");
 
       if (!needsSecret) {
-        // Service doesn't need secret, always show
         (item as HTMLElement).hidden = false;
         return;
       }
@@ -398,10 +403,9 @@ export class TranslatorPanel extends PluginCEBase {
           const result = service.secretValidator(secret);
           (item as HTMLElement).hidden = !result.status;
         } catch {
-          (item as HTMLElement).hidden = false; // Show on error
+          (item as HTMLElement).hidden = false;
         }
       } else {
-        // Has secret, no validator - show it
         (item as HTMLElement).hidden = false;
       }
     });
