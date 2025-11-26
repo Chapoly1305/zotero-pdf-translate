@@ -1,6 +1,6 @@
 import { config } from "../../package.json";
 import { PluginCEBase } from "./base";
-import { getPref, setPref } from "../utils/prefs";
+import { getPref, setPref, getPrefJSON } from "../utils/prefs";
 import { LANG_CODE } from "../utils/config";
 import {
   addTranslateTask,
@@ -344,6 +344,69 @@ export class TranslatorPanel extends PluginCEBase {
 
   destroy(): void {}
 
+  /**
+   * Filter unconfigured services from the dropdown menu.
+   * Hides services that require API keys but haven't been configured.
+   */
+  _filterUnconfiguredServices() {
+    if (!getPref("hideUnconfiguredServices")) {
+      // Show all services if preference is disabled
+      const menuItems = this._queryID("services")?.querySelectorAll("menuitem");
+      menuItems?.forEach((item) => {
+        (item as HTMLElement).hidden = false;
+      });
+      return;
+    }
+
+    let secrets: Record<string, string> = {};
+    try {
+      secrets = getPrefJSON("secretObj") || {};
+    } catch {
+      secrets = {};
+    }
+
+    const menuItems = this._queryID("services")?.querySelectorAll("menuitem");
+    menuItems?.forEach((item) => {
+      const serviceId = item.getAttribute("value");
+      if (!serviceId) return;
+
+      const service = services.getServiceById(serviceId);
+      if (!service) return;
+
+      // Check if service requires configuration
+      const needsSecret =
+        !!service.defaultSecret ||
+        !!service.secretValidator ||
+        serviceId.startsWith("custom");
+
+      if (!needsSecret) {
+        // Service doesn't need secret, always show
+        (item as HTMLElement).hidden = false;
+        return;
+      }
+
+      // Check if secret is configured
+      const secret = secrets[serviceId] || "";
+      if (!secret) {
+        (item as HTMLElement).hidden = true;
+        return;
+      }
+
+      // If service has a validator, check if the secret is valid
+      if (service.secretValidator) {
+        try {
+          const result = service.secretValidator(secret);
+          (item as HTMLElement).hidden = !result.status;
+        } catch {
+          (item as HTMLElement).hidden = false; // Show on error
+        }
+      } else {
+        // Has secret, no validator - show it
+        (item as HTMLElement).hidden = false;
+      }
+    });
+  }
+
   render() {
     const updateHidden = (type: string, pref: string) => {
       const elem = this._queryID(type) as XUL.Box;
@@ -380,6 +443,9 @@ export class TranslatorPanel extends PluginCEBase {
     updateHidden("auto-container", "showSidebarSettings");
     updateHidden("concat-container", "showSidebarConcat");
     updateHidden("copy-container", "showSidebarCopy");
+
+    // Filter unconfigured services from dropdown if preference is enabled
+    this._filterUnconfiguredServices();
 
     setValue("services", getPref("translateSource") as string);
 

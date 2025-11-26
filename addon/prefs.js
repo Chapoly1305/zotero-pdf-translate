@@ -19,6 +19,7 @@ pref("__prefsPrefix__.rawResultOrder", false);
 pref("__prefsPrefix__.showItemMenuTitleTranslation", true);
 pref("__prefsPrefix__.showItemMenuAbstractTranslation", true);
 pref("__prefsPrefix__.showSidebarEngine", true);
+pref("__prefsPrefix__.hideUnconfiguredServices", false);
 pref("__prefsPrefix__.showSidebarSettings", true);
 pref("__prefsPrefix__.showSidebarConcat", true);
 pref("__prefsPrefix__.enableConcatKey", true);

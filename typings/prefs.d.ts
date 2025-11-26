@@ -28,6 +28,7 @@ declare namespace _ZoteroTypes {
       "showItemMenuTitleTranslation": boolean;
       "showItemMenuAbstractTranslation": boolean;
       "showSidebarEngine": boolean;
+      "hideUnconfiguredServices": boolean;
       "showSidebarSettings": boolean;
       "showSidebarConcat": boolean;
       "enableConcatKey": boolean;
