@@ -8,8 +8,14 @@ function getCustomParams(prefix: string): Record<string, any> {
     (getPref(`${prefix}.customParams`) as string) || "{}";
   try {
     const customParams = JSON.parse(storedCustomParams);
-    // Filter out parameters that are already defined
-    const standardParams = ["model", "messages", "temperature", "stream"];
+    // Filter out parameters that are already defined (for both Chat Completions and Responses API)
+    const standardParams = [
+      "model",
+      "messages",
+      "input",
+      "temperature",
+      "stream",
+    ];
     return Object.fromEntries(
       Object.entries(customParams).filter(
         ([key]) => !standardParams.includes(key),
@@ -23,6 +29,67 @@ function getCustomParams(prefix: string): Record<string, any> {
 interface ParsedResponse {
   content: string;
   finished: boolean;
+}
+
+/**
+ * Detect if the endpoint URL is for OpenAI Responses API
+ */
+function isResponsesApiEndpoint(url: string): boolean {
+  return url.endsWith("/responses") || url.includes("/responses?");
+}
+
+/**
+ * Parse streaming response for OpenAI Responses API
+ * Event format: { "type": "response.output_text.delta", "delta": "text", ... }
+ */
+function parseResponsesApiStreamResponse(obj: any): ParsedResponse {
+  const eventType = obj.type || "";
+
+  // Text delta event - this is the main event for streaming text
+  // Format: { "type": "response.output_text.delta", "delta": "In", ... }
+  if (eventType === "response.output_text.delta") {
+    return {
+      content: obj.delta || "",
+      finished: false,
+    };
+  }
+
+  // Completion events
+  if (
+    eventType === "response.completed" ||
+    eventType === "response.done" ||
+    eventType === "response.failed" ||
+    eventType === "response.incomplete"
+  ) {
+    return {
+      content: "",
+      finished: true,
+    };
+  }
+
+  // Other events we don't need to extract content from:
+  // response.created, response.in_progress, response.output_item.added,
+  // response.content_part.added, response.output_text.done, etc.
+  return { content: "", finished: false };
+}
+
+/**
+ * Parse non-streaming response for OpenAI Responses API
+ * Response format: { output: [{ type: "message", content: [{ type: "output_text", text: "..." }] }] }
+ */
+function parseResponsesApiNonStreamResponse(obj: any): string {
+  if (obj.output && Array.isArray(obj.output)) {
+    for (const item of obj.output) {
+      if (item.type === "message" && item.content) {
+        for (const content of item.content) {
+          if (content.type === "output_text") {
+            return content.text || "";
+          }
+        }
+      }
+    }
+  }
+  return "";
 }
 
 function parseStreamResponse(obj: any): ParsedResponse {
@@ -80,6 +147,7 @@ const gptTranslate = async function (
   }
 
   const streamMode = stream ?? true;
+  const useResponsesApi = isResponsesApiEndpoint(apiURL);
 
   const refreshHandler = addon.api.getTemporaryRefreshHandler({ task: data });
 
@@ -107,7 +175,16 @@ const gptTranslate = async function (
         // OpenAI SSE format
         // Prepend buffer from previous incomplete chunk
         const fullResponse = buffer + newResponse;
-        dataArray = fullResponse.split("data: ");
+        if (useResponsesApi) {
+          // Responses API has "event:" lines, need line-by-line parsing
+          dataArray = fullResponse
+            .split("\n")
+            .filter((line: string) => line.startsWith("data: "))
+            .map((line: string) => line.slice(6));
+        } else {
+          // Chat Completions format: simple split works
+          dataArray = fullResponse.split("data: ");
+        }
         buffer = ""; // Reset buffer
       } else {
         // Ollama native format - each line is a JSON object
@@ -124,7 +201,9 @@ const gptTranslate = async function (
 
         try {
           const obj = JSON.parse(data);
-          const { content, finished } = parseStreamResponse(obj);
+          const { content, finished } = useResponsesApi
+            ? parseResponsesApiStreamResponse(obj)
+            : parseStreamResponse(obj);
 
           result += content;
           if (finished) {
@@ -164,7 +243,9 @@ const gptTranslate = async function (
       // console.debug("GPT response received");
       try {
         const responseObj = JSON.parse(xmlhttp.responseText);
-        const resultContent = parseNonStreamResponse(responseObj);
+        const resultContent = useResponsesApi
+          ? parseResponsesApiNonStreamResponse(responseObj)
+          : parseNonStreamResponse(responseObj);
         data.result = resultContent.replace(/^\n\n/, "");
       } catch (error) {
         // throw `Failed to parse response: ${error}`;
@@ -176,24 +257,35 @@ const gptTranslate = async function (
     };
   };
 
+  // Build request body based on API type
+  const requestBody = useResponsesApi
+    ? {
+        model: model,
+        input: transformContent(data.langfrom, data.langto, data.raw),
+        temperature: temperature,
+        stream: streamMode,
+        ...getCustomParams(prefix),
+      }
+    : {
+        model: model,
+        messages: [
+          {
+            role: "user",
+            content: transformContent(data.langfrom, data.langto, data.raw),
+          },
+        ],
+        temperature: temperature,
+        stream: streamMode,
+        ...getCustomParams(prefix),
+      };
+
   const xhr = await Zotero.HTTP.request("POST", apiURL, {
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${data.secret}`,
       "api-key": data.secret,
     },
-    body: JSON.stringify({
-      model: model,
-      messages: [
-        {
-          role: "user",
-          content: transformContent(data.langfrom, data.langto, data.raw),
-        },
-      ],
-      temperature: temperature,
-      stream: streamMode,
-      ...getCustomParams(prefix),
-    }),
+    body: JSON.stringify(requestBody),
     responseType: "text",
     requestObserver: (xmlhttp: XMLHttpRequest) => {
       if (streamMode) {
