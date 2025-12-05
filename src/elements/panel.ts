@@ -1,6 +1,6 @@
 import { config } from "../../package.json";
 import { PluginCEBase } from "./base";
-import { getPref, setPref, getPrefJSON } from "../utils/prefs";
+import { getPref, setPref } from "../utils/prefs";
 import { LANG_CODE } from "../utils/config";
 import {
   addTranslateTask,
@@ -354,60 +354,13 @@ export class TranslatorPanel extends PluginCEBase {
 
     const menuItems = menuPopup.querySelectorAll("menuitem");
     const hideUnconfigured = getPref("hideUnconfiguredServices") as boolean;
-
-    if (!hideUnconfigured) {
-      menuItems.forEach((item) => {
-        (item as HTMLElement).hidden = false;
-      });
-      return;
-    }
-
-    let secrets: Record<string, string> = {};
-    try {
-      secrets = getPrefJSON("secretObj") || {};
-    } catch {
-      secrets = {};
-    }
+    const unconfiguredIds = hideUnconfigured
+      ? services.getUnconfiguredServiceIds()
+      : null;
 
     menuItems.forEach((item) => {
       const serviceId = item.getAttribute("value");
-      if (!serviceId) return;
-
-      const service = services.getServiceById(serviceId);
-      if (!service) {
-        (item as HTMLElement).hidden = false;
-        return;
-      }
-
-      // Check if service requires configuration
-      const needsSecret =
-        !!service.defaultSecret ||
-        !!service.secretValidator ||
-        serviceId.startsWith("custom");
-
-      if (!needsSecret) {
-        (item as HTMLElement).hidden = false;
-        return;
-      }
-
-      // Check if secret is configured
-      const secret = secrets[serviceId] || "";
-      if (!secret) {
-        (item as HTMLElement).hidden = true;
-        return;
-      }
-
-      // If service has a validator, check if the secret is valid
-      if (service.secretValidator) {
-        try {
-          const result = service.secretValidator(secret);
-          (item as HTMLElement).hidden = !result.status;
-        } catch {
-          (item as HTMLElement).hidden = false;
-        }
-      } else {
-        (item as HTMLElement).hidden = false;
-      }
+      (item as HTMLElement).hidden = !!unconfiguredIds?.has(serviceId || "");
     });
   }
 

@@ -184,6 +184,49 @@ export class TranslationServices {
     );
   }
 
+  /**
+   * Get the set of unconfigured service IDs.
+   * A service is unconfigured if it requires a secret but none is set or validation fails.
+   * @returns Set of service IDs that are not configured
+   */
+  public getUnconfiguredServiceIds(): Set<string> {
+    const unconfigured = new Set<string>();
+
+    let secrets: Record<string, string> = {};
+    try {
+      secrets = JSON.parse((getPref("secretObj") as string) || "{}");
+    } catch {
+      secrets = {};
+    }
+
+    for (const service of this.#services) {
+      const needsSecret =
+        !!service.defaultSecret ||
+        !!service.secretValidator ||
+        service.id.startsWith("custom");
+
+      if (!needsSecret) continue;
+
+      const secret = secrets[service.id] || "";
+      if (!secret) {
+        unconfigured.add(service.id);
+        continue;
+      }
+
+      if (service.secretValidator) {
+        try {
+          if (!service.secretValidator(secret).status) {
+            unconfigured.add(service.id);
+          }
+        } catch {
+          // Validation error - treat as configured
+        }
+      }
+    }
+
+    return unconfigured;
+  }
+
   public async runTranslationTask(
     task?: TranslateTask,
     options: {
