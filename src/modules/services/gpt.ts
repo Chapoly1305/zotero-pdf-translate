@@ -171,7 +171,8 @@ const gptTranslate = async function (
 
       // Handle both OpenAI SSE format and Ollama native streaming
       let dataArray;
-      if (newResponse.includes("data: ")) {
+      const hasSseData = /(^|\n)data:/.test(newResponse);
+      if (hasSseData) {
         // OpenAI SSE format
         // Prepend buffer from previous incomplete chunk
         const fullResponse = buffer + newResponse;
@@ -179,11 +180,11 @@ const gptTranslate = async function (
           // Responses API has "event:" lines, need line-by-line parsing
           dataArray = fullResponse
             .split("\n")
-            .filter((line: string) => line.startsWith("data: "))
-            .map((line: string) => line.slice(6));
+            .filter((line: string) => line.startsWith("data:"))
+            .map((line: string) => line.slice(5).trimStart());
         } else {
           // Chat Completions format: simple split works
-          dataArray = fullResponse.split("data: ");
+          dataArray = fullResponse.split("data:");
         }
         buffer = ""; // Reset buffer
       } else {
@@ -214,7 +215,7 @@ const gptTranslate = async function (
           // Save it to buffer for next iteration
           // https://github.com/windingwind/zotero-pdf-translate/issues/1304
           if (i === dataArray.length - 1) {
-            buffer = newResponse.includes("data: ") ? "data: " + data : data;
+            buffer = hasSseData ? "data:" + data : data;
           }
           continue;
         }
