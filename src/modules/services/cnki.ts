@@ -2,6 +2,28 @@ import { aesEcbEncrypt, base64 } from "../../utils/crypto";
 import { getPref, getPrefJSON, setPref } from "../../utils/prefs";
 import { TranslateService } from "./base";
 
+async function requestWithRetry<T>(
+  fn: () => Promise<T>,
+  retries: number,
+  baseDelayMs: number,
+) {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastError = e;
+      if (attempt === retries) {
+        throw e;
+      }
+      await new Promise((resolve) =>
+        setTimeout(resolve, baseDelayMs * (attempt + 1)),
+      );
+    }
+  }
+  throw lastError;
+}
+
 const translate = <TranslateService["translate"]>async function (data) {
   let progressWindow;
   const useSplit = getPref("cnkiUseSplit") as boolean;
@@ -11,20 +33,26 @@ const translate = <TranslateService["translate"]>async function (data) {
   }
 
   const processTranslation = async (text: string) => {
-    const xhr = await Zotero.HTTP.request(
-      "POST",
-      "https://dict.cnki.net/fyzs-front-api/translate/literaltranslation",
-      {
-        headers: {
-          "Content-Type": "application/json;charset=UTF-8",
-          Token: await getToken(),
-        },
-        body: JSON.stringify({
-          words: await getWord(text),
-          translateType: null,
-        }),
-        responseType: "json",
-      },
+    const token = await getToken();
+    const xhr = await requestWithRetry(
+      () =>
+        Zotero.HTTP.request(
+          "POST",
+          "https://dict.cnki.net/fyzs-front-api/translate/literaltranslation",
+          {
+            headers: {
+              "Content-Type": "application/json;charset=UTF-8",
+              Token: token,
+            },
+            body: JSON.stringify({
+              words: await getWord(text),
+              translateType: null,
+            }),
+            responseType: "json",
+          },
+        ),
+      2,
+      500,
     );
 
     if (xhr.response.data?.isInputVerificationCode) {
@@ -95,12 +123,17 @@ export async function getToken(forceRefresh: boolean = false) {
     ztoolkit.log(e);
   }
   if (doRefresh) {
-    const xhr = await Zotero.HTTP.request(
-      "GET",
-      "https://dict.cnki.net/fyzs-front-api/getToken",
-      {
-        responseType: "json",
-      },
+    const xhr = await requestWithRetry(
+      () =>
+        Zotero.HTTP.request(
+          "GET",
+          "https://dict.cnki.net/fyzs-front-api/getToken",
+          {
+            responseType: "json",
+          },
+        ),
+      2,
+      300,
     );
     if (xhr && xhr.response && xhr.response.code === 200) {
       token = xhr.response.token;
