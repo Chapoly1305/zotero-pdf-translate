@@ -34,6 +34,7 @@ const translate = <TranslateService["translate"]>async function (data) {
 
   const processTranslation = async (text: string) => {
     const token = await getToken();
+    const words = await getWord(text);
     const xhr = await requestWithRetry(
       () =>
         Zotero.HTTP.request(
@@ -45,7 +46,7 @@ const translate = <TranslateService["translate"]>async function (data) {
               Token: token,
             },
             body: JSON.stringify({
-              words: await getWord(text),
+              words: words,
               translateType: null,
             }),
             responseType: "json",
@@ -90,7 +91,6 @@ const translate = <TranslateService["translate"]>async function (data) {
       addon.api.getTemporaryRefreshHandler({ task: data })();
       await new Promise((resolve) => setTimeout(resolve, splitSecond * 1000));
     }
-    // data.result = translatedText.trim();
   } else {
     if (data.raw.length > 800) {
       progressWindow
@@ -136,7 +136,7 @@ export async function getToken(forceRefresh: boolean = false) {
       300,
     );
     if (xhr && xhr.response && xhr.response.code === 200) {
-      token = xhr.response.token;
+      token = xhr.response.data;
       setPref(
         "cnkiToken",
         JSON.stringify({
