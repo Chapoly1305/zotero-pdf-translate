@@ -46,7 +46,7 @@ const translate = <TranslateService["translate"]>async function (data) {
               Token: token,
             },
             body: JSON.stringify({
-              words: words,
+              words,
               translateType: null,
             }),
             responseType: "json",
