@@ -14,6 +14,7 @@ async function requestWithRetry<T>(
     } catch (e) {
       lastError = e;
       if (attempt === retries) {
+        ztoolkit.log(`CNKI request failed after ${retries + 1} attempts`, e);
         throw e;
       }
       await new Promise((resolve) =>
@@ -35,7 +36,7 @@ const translate = <TranslateService["translate"]>async function (data) {
   const processTranslation = async (text: string) => {
     const token = await getToken();
     const xhr = await requestWithRetry(
-      () =>
+      async () =>
         Zotero.HTTP.request(
           "POST",
           "https://dict.cnki.net/fyzs-front-api/translate/literaltranslation",
