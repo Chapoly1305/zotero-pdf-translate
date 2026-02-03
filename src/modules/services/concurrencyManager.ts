@@ -24,7 +24,10 @@ export class ServiceConcurrencyManager {
         : Infinity;
     const existing = this.semaphores.get(serviceId);
     if (!existing || existing.limit !== limit) {
-      this.semaphores.set(serviceId, { semaphore: new Semaphore(limit), limit });
+      this.semaphores.set(serviceId, {
+        semaphore: new Semaphore(limit),
+        limit,
+      });
     }
     return this.semaphores.get(serviceId)!.semaphore;
   }
