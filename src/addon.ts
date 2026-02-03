@@ -2,6 +2,7 @@ import api from "./api";
 import hooks from "./hooks";
 import { TranslateTask } from "./utils/task";
 import { services, TranslationServices } from "./modules/services";
+import { ServiceConcurrencyManager } from "./modules/services/concurrencyManager";
 import { createZToolkit } from "./utils/ztoolkit";
 import { config } from "../package.json";
 
@@ -34,6 +35,7 @@ class Addon {
       maximumQueueLength: number;
       batchTaskDelay: number;
       services: TranslationServices;
+      concurrencyManager: ServiceConcurrencyManager;
       cachedSourceLanguage: Record<number, string>;
       refreshTick: string;
     };
@@ -61,6 +63,7 @@ class Addon {
         maximumQueueLength: 100,
         batchTaskDelay: 1000,
         services,
+        concurrencyManager: new ServiceConcurrencyManager(services),
         cachedSourceLanguage: {},
         refreshTick: "",
       },

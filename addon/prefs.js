@@ -61,6 +61,10 @@ pref(
 );
 pref("__prefsPrefix__.chatGPT.stream", true);
 pref("__prefsPrefix__.chatGPT.customParams", "");
+pref("__prefsPrefix__.chatGPT.concurrencyLimit", 0);
+pref("__prefsPrefix__.customgpt1.concurrencyLimit", 0);
+pref("__prefsPrefix__.customgpt2.concurrencyLimit", 0);
+pref("__prefsPrefix__.customgpt3.concurrencyLimit", 0);
 pref("__prefsPrefix__.azureGPT.endPoint", "");
 pref("__prefsPrefix__.azureGPT.model", "");
 pref("__prefsPrefix__.azureGPT.apiVersion", "2023-05-15");
@@ -71,6 +75,7 @@ pref(
 );
 pref("__prefsPrefix__.azureGPT.stream", true);
 pref("__prefsPrefix__.azureGPT.customParams", "");
+pref("__prefsPrefix__.azureGPT.concurrencyLimit", 0);
 pref(
   "__prefsPrefix__.gemini.endPoint",
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite",

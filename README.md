@@ -227,6 +227,9 @@ The secret format is `sk-*` for ChatGPT, and `MY_APIKEY` for AzureGPT and Custom
 
 Support third-party or self-deployed compatible APIs.
 
+You can set a per-service `Concurrency Limit` in the GPT service settings.  
+Use `0` for no limit (default). Set to `1` for APIs with strict concurrency limits.
+
 > [Chinese Document](https://gist.github.com/GrayXu/f1b72353b4b0493d51d47f0f7498b67b)
 
 **Gemini**  

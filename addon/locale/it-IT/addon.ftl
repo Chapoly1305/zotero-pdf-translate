@@ -77,6 +77,8 @@ service-deeplx-dialog-endPoint=API
 service-chatgpt-dialog-endPoint=API
 service-chatgpt-dialog-model=Modello
 service-chatgpt-dialog-temperature=Temperatura
+service-chatgpt-dialog-concurrencyLimit=Limite di Concorrenza
+service-chatgpt-dialog-concurrencyLimit-placeholder=0 = nessun limite
 service-chatgpt-dialog-prompt=Prompt
 service-chatgpt-dialog-stream=Stream
 service-chatgpt-dialog-custom-request=Custom Request
@@ -84,6 +86,8 @@ service-chatgpt-dialog-custom-request=Custom Request
 service-azuregpt-dialog-endPoint=EndPoint
 service-azuregpt-dialog-model=Nome
 service-azuregpt-dialog-temperature=Temperatura
+service-azuregpt-dialog-concurrencyLimit=Limite di Concorrenza
+service-azuregpt-dialog-concurrencyLimit-placeholder=0 = nessun limite
 service-azuregpt-dialog-apiVersion=Versione
 service-azuregpt-dialog-prompt=Prompt
 service-azuregpt-dialog-stream=Stream
@@ -162,4 +166,3 @@ service-nllb-dialog-apistream=nllb-api Stream
 service-nllb-dialog-serveendpoint=nllb-serve EndPoint
 service-nllb-dialog-apilabel=nllb-api Docs
 service-nllb-dialog-servelabel=nllb-serve Docs
-

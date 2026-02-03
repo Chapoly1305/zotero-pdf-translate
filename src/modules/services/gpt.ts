@@ -3,6 +3,10 @@ import { TranslateService } from "./base";
 
 type ID = "chatgpt" | "customgpt1" | "customgpt2" | "customgpt3" | "azuregpt";
 
+function isCustomGPT(id: ID): id is "customgpt1" | "customgpt2" | "customgpt3" {
+  return id.startsWith("custom");
+}
+
 function getCustomParams(prefix: string): Record<string, any> {
   const storedCustomParams =
     (getPref(`${prefix}.customParams`) as string) || "{}";
@@ -320,6 +324,13 @@ function createGPTService(id: ID): TranslateService {
       id === "azuregpt"
         ? "https://learn.microsoft.com/en-us/azure/ai-foundry/openai/reference#chat-completions"
         : "https://gist.github.com/GrayXu/f1b72353b4b0493d51d47f0f7498b67b",
+    get concurrencyLimit() {
+      const prefKey = isCustomGPT(id)
+        ? `${id}.concurrencyLimit`
+        : `${prefPrefix}.concurrencyLimit`;
+      const limit = Number(getPref(prefKey));
+      return limit > 0 ? limit : Infinity;
+    },
 
     ...(checkSecret && {
       defaultSecret: "",
@@ -440,6 +451,19 @@ function createGPTService(id: ID): TranslateService {
           hidden: id !== "azuregpt",
         });
       }
+
+      settings.addNumberSetting({
+        prefKey: isCustomGPT(id)
+          ? `${id}.concurrencyLimit`
+          : `${prefPrefix}.concurrencyLimit`,
+        nameKey: `service-${servicePrefix}-dialog-concurrencyLimit`,
+        placeholder: getString(
+          `service-${servicePrefix}-dialog-concurrencyLimit-placeholder`,
+        ),
+        min: 0,
+        max: 100,
+        step: 1,
+      });
 
       settings
         .addTextAreaSetting({

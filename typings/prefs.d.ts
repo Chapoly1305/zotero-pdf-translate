@@ -64,6 +64,10 @@ declare namespace _ZoteroTypes {
       "chatGPT.prompt": string;
       "chatGPT.stream": boolean;
       "chatGPT.customParams": string;
+      "chatGPT.concurrencyLimit": number;
+      "customgpt1.concurrencyLimit": number;
+      "customgpt2.concurrencyLimit": number;
+      "customgpt3.concurrencyLimit": number;
       "azureGPT.endPoint": string;
       "azureGPT.model": string;
       "azureGPT.apiVersion": string;
@@ -71,6 +75,7 @@ declare namespace _ZoteroTypes {
       "azureGPT.prompt": string;
       "azureGPT.stream": boolean;
       "azureGPT.customParams": string;
+      "azureGPT.concurrencyLimit": number;
       "gemini.endPoint": string;
       "gemini.prompt": string;
       "gemini.stream": boolean;

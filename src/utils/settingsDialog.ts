@@ -154,6 +154,7 @@ export class ServiceSettingsDialog extends SettingsDialogHelper {
         min: field.min || 0,
         max: field.max || 100,
         step: field.step || 1,
+        ...(field.placeholder ? { placeholder: field.placeholder } : {}),
       },
       styles: {
         minWidth: "400px",

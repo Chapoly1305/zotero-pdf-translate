@@ -32,6 +32,13 @@ export interface TranslateService {
    */
   helpUrl?: string;
 
+  /**
+   * Maximum concurrent requests allowed for this service.
+   *
+   * @default Infinity
+   */
+  concurrencyLimit?: number;
+
   defaultSecret?: string;
   secretValidator?: (secret: string) => SecretValidateResult;
 

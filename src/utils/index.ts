@@ -4,6 +4,7 @@ export * from "./llmPrompt";
 export * from "./locale";
 export * from "./prefs";
 export * from "./secret";
+export * from "./semaphore";
 export * from "./str";
 export * from "./task";
 export * from "./wait";

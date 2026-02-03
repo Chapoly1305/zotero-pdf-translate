@@ -129,7 +129,10 @@ export class TranslateTaskRunner {
     data.status = "processing";
     try {
       ztoolkit.log(data);
-      await this.processor(data as Required<TranslateTask>);
+      const manager = addon.data.translate.concurrencyManager;
+      await manager.runWithConcurrencyControl(data.service, () =>
+        this.processor(data as Required<TranslateTask>),
+      );
       data.status = "success";
     } catch (e) {
       data.result = this.makeErrorInfo(data.service, String(e));
