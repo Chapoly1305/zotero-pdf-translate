@@ -139,6 +139,7 @@ export function buildReaderPopup(
 
   const makeId = (type: string) =>
     `${config.addonRef}-${reader._instanceID}-${type}`;
+  const onTextAreaCopy = getOnTextAreaCopy(popup, makeId("text"));
 
   const hidePopupTextarea = getPref("enableHidePopupTextarea") as boolean;
   append(
@@ -243,6 +244,10 @@ export function buildReaderPopup(
                   onTextAreaResize as (ev: Event) => void,
                 );
               },
+            },
+            {
+              type: "keydown",
+              listener: onTextAreaCopy as (ev: Event) => void,
             },
             {
               type: "dblclick",
