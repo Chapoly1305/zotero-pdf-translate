@@ -288,7 +288,9 @@ function createParamInputCell(
   input.type = "text";
   input.id = `${type}-${index}`;
   input.placeholder =
-    type === "key" ? "Parameter name" : "Parameter value (JSON format)";
+    type === "key"
+      ? getString("service-dialog-custom-request-parameter-name-placeholder")
+      : getString("service-dialog-custom-request-parameter-value-placeholder");
   input.value = value;
   Object.assign(input.style, CUSTOM_PARAMS_INPUT_STYLES);
 
@@ -296,8 +298,133 @@ function createParamInputCell(
   return cell;
 }
 
+type ParsedCustomParamsResult = {
+  params: Record<string, any>;
+  errors: CustomParamValidationError[];
+};
+
+type CustomParamValidationError = {
+  kind: "duplicate" | "empty" | "invalid";
+  key: string;
+  detail?: string;
+};
+
+function parseCustomParamsFromDialog(doc: Document): ParsedCustomParamsResult {
+  const params: Record<string, any> = {};
+  const errors: CustomParamValidationError[] = [];
+  const seenKeys = new Set<string>();
+  let index = 0;
+
+  while (true) {
+    const keyElement = doc.getElementById(`key-${index}`) as HTMLInputElement;
+    const valueElement = doc.getElementById(
+      `value-${index}`,
+    ) as HTMLInputElement;
+
+    if (!keyElement || !valueElement) break;
+
+    const key = keyElement.value.trim();
+    const valueRaw = valueElement.value.trim();
+
+    if (!key) {
+      index++;
+      continue;
+    }
+
+    if (seenKeys.has(key)) {
+      errors.push({ kind: "duplicate", key });
+      index++;
+      continue;
+    }
+    seenKeys.add(key);
+
+    if (!valueRaw) {
+      errors.push({ kind: "empty", key });
+      index++;
+      continue;
+    }
+
+    try {
+      params[key] = JSON.parse(valueRaw);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      errors.push({ kind: "invalid", key, detail: msg });
+    }
+
+    index++;
+  }
+
+  return { params, errors };
+}
+
+function formatCustomParamsValidationMessage(
+  errors: CustomParamValidationError[],
+): string {
+  const objectExample = '{"enable_thinking": false}';
+  const lines = [
+    getString("service-dialog-custom-request-validation-summary"),
+    "",
+    getString("service-dialog-custom-request-validation-errors-head"),
+  ];
+
+  for (const error of errors) {
+    switch (error.kind) {
+      case "duplicate":
+        lines.push(
+          getString(
+            "service-dialog-custom-request-validation-error-duplicate",
+            {
+              args: { key: error.key },
+            },
+          ),
+        );
+        break;
+      case "empty":
+        lines.push(
+          getString("service-dialog-custom-request-validation-error-empty", {
+            args: { key: error.key },
+          }),
+        );
+        break;
+      case "invalid":
+      default:
+        lines.push(
+          getString("service-dialog-custom-request-validation-error-invalid", {
+            args: { key: error.key, detail: error.detail || "" },
+          }),
+        );
+        break;
+    }
+  }
+
+  lines.push(
+    "",
+    getString("service-dialog-custom-request-validation-examples-head"),
+    getString("service-dialog-custom-request-validation-example-boolean"),
+    getString("service-dialog-custom-request-validation-example-number"),
+    getString("service-dialog-custom-request-validation-example-string"),
+    getString("service-dialog-custom-request-validation-example-object", {
+      args: { example: objectExample },
+    }),
+  );
+
+  return lines.join("\n");
+}
+
 async function openCustomRequestDialog(prefKey: string) {
   const dialog = new ztoolkit.Dialog(2, 1);
+  const parameterNameHeader = getString(
+    "service-dialog-custom-request-parameter-name",
+  );
+  const parameterValueHeader = getString(
+    "service-dialog-custom-request-parameter-value",
+  );
+  const parameterNamePlaceholder = getString(
+    "service-dialog-custom-request-parameter-name-placeholder",
+  );
+  const parameterValuePlaceholder = getString(
+    "service-dialog-custom-request-parameter-value-placeholder",
+  );
 
   // Get stored custom parameters or default empty object
   const storedCustomParams = (getPref(prefKey) as string) || "{}";
@@ -343,7 +470,7 @@ async function openCustomRequestDialog(prefKey: string) {
             id: `key-${index}`,
             attributes: {
               type: "text",
-              placeholder: "Parameter name",
+              placeholder: parameterNamePlaceholder,
               value: pair.key || "",
             },
             styles: CUSTOM_PARAMS_INPUT_STYLES,
@@ -361,7 +488,7 @@ async function openCustomRequestDialog(prefKey: string) {
             id: `value-${index}`,
             attributes: {
               type: "text",
-              placeholder: "Parameter value (JSON format)",
+              placeholder: parameterValuePlaceholder,
               value: pair.value || "",
             },
             styles: CUSTOM_PARAMS_INPUT_STYLES,
@@ -434,7 +561,7 @@ async function openCustomRequestDialog(prefKey: string) {
                           fontWeight: "bold",
                         },
                         properties: {
-                          innerHTML: "Parameter Name",
+                          innerHTML: parameterNameHeader,
                         },
                       },
                       {
@@ -448,7 +575,7 @@ async function openCustomRequestDialog(prefKey: string) {
                           fontWeight: "bold",
                         },
                         properties: {
-                          innerHTML: "Parameter Value",
+                          innerHTML: parameterValueHeader,
                         },
                       },
                     ],
@@ -526,31 +653,20 @@ async function openCustomRequestDialog(prefKey: string) {
 
   switch (dialogData._lastButtonId) {
     case "save": {
-      // Collect and save custom parameters from all existing input fields
-      const finalParams: Record<string, any> = {};
-      let index = 0;
+      const { params, errors } = parseCustomParamsFromDialog(
+        dialog.window.document,
+      );
 
-      // Loop through all possible input fields
-      while (true) {
-        const keyElement = dialog.window.document.getElementById(
-          `key-${index}`,
-        ) as HTMLInputElement;
-        const valueElement = dialog.window.document.getElementById(
-          `value-${index}`,
-        ) as HTMLInputElement;
-
-        if (!keyElement || !valueElement) break;
-
-        if (keyElement.value.trim()) {
-          try {
-            finalParams[keyElement.value] = JSON.parse(valueElement.value);
-          } catch (e) {
-            finalParams[keyElement.value] = valueElement.value;
-          }
-        }
-        index++;
+      if (errors.length) {
+        Zotero.alert(
+          dialog.window,
+          getString("service-dialog-custom-request-validation-title"),
+          formatCustomParamsValidationMessage(errors),
+        );
+        break;
       }
-      setPref(prefKey, JSON.stringify(finalParams));
+
+      setPref(prefKey, JSON.stringify(params));
       break;
     }
 
