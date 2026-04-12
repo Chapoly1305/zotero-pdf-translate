@@ -32,7 +32,7 @@ export function registerMenu() {
         onShowing: (event, context) => {
           context.setVisible(
             !!(
-              getPref("showItemMenuAbstractTranslation") &&
+              getPref("showItemMenuTitleTranslation") &&
               context.items?.every((item) => item.isRegularItem())
             ),
           );
@@ -56,7 +56,7 @@ export function registerMenu() {
         onShowing: (event, context) => {
           context.setVisible(
             !!(
-              getPref("showItemMenuTitleTranslation") &&
+              getPref("showItemMenuAbstractTranslation") &&
               context.items?.every((item) => item.isRegularItem())
             ),
           );
