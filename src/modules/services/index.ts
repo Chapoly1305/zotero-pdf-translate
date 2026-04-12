@@ -3,6 +3,7 @@ import {
   getString,
   getPref,
   getLastTranslateTask,
+  sanitizeTaskForLog,
   TranslateTask,
   TranslateTaskRunner,
   stripEmptyLines,
@@ -294,7 +295,7 @@ export class TranslationServices {
 
       if (cachedTask) {
         cacheHit = true;
-        ztoolkit.log("cache hit", cachedTask);
+        ztoolkit.log("cache hit", sanitizeTaskForLog(cachedTask));
         task.result = cachedTask.result;
         task.status = "success";
 
