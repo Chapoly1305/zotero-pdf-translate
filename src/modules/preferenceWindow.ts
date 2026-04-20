@@ -882,7 +882,7 @@ async function pickJsonFile(
     title,
     mode === "open" ? fp.modeOpen : fp.modeSave,
   );
-  fp.appendFilter("JSON files (*.json)", "*.json");
+  fp.appendFilter("*.json", "*.json");
   fp.appendFilters(fp.filterAll);
   if (mode === "save") {
     fp.defaultString = defaultName;
