@@ -966,6 +966,13 @@ async function restorePluginData() {
         return;
       }
       overwriteItemTranslations = choice.checked;
+    } else {
+      const confirmed = showPromptConfirm(
+        getString("pluginData-restore-confirm"),
+      );
+      if (!confirmed) {
+        return;
+      }
     }
 
     clearPluginUserPrefs();
