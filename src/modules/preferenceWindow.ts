@@ -563,9 +563,9 @@ type ItemTranslationSnapshot = {
   abstractTranslation?: string;
 };
 
-const PREF_STRING = 32;
-const PREF_INT = 64;
-const PREF_BOOL = 128;
+const PREF_STRING = Services.prefs.PREF_STRING;
+const PREF_INT = Services.prefs.PREF_INT;
+const PREF_BOOL = Services.prefs.PREF_BOOL;
 const EXCLUDED_BACKUP_PREF_KEYS = new Set([
   // UI cache/state
   "popupWidth",
