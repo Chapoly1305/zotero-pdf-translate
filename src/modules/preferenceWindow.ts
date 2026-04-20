@@ -1008,13 +1008,21 @@ async function resetPluginData() {
     return;
   }
 
-  clearPluginUserPrefs();
-  setDefaultPrefSettings();
-  if (choice.checked) {
-    await clearAllItemTranslations();
+  try {
+    clearPluginUserPrefs();
+    setDefaultPrefSettings();
+    if (choice.checked) {
+      await clearAllItemTranslations();
+    }
+    syncPrefsPaneFromPrefs();
+    addon.hooks.onReaderTabPanelRefresh();
+    addon.api.getTemporaryRefreshHandler()();
+    showPromptAlert(getString("pluginData-reset-success"));
+  } catch (e) {
+    showPromptAlert(
+      getString("pluginData-reset-failed", {
+        args: { reason: e instanceof Error ? e.message : String(e) },
+      }),
+    );
   }
-  syncPrefsPaneFromPrefs();
-  addon.hooks.onReaderTabPanelRefresh();
-  addon.api.getTemporaryRefreshHandler()();
-  showPromptAlert(getString("pluginData-reset-success"));
 }
