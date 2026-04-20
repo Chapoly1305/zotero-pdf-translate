@@ -984,7 +984,6 @@ async function restorePluginData() {
     }
     setDefaultPrefSettings();
     syncPrefsPaneFromPrefs();
-    addon.hooks.onReaderTabPanelRefresh();
     addon.api.getTemporaryRefreshHandler()();
     showPromptAlert(
       getString("pluginData-restore-success", { args: { path } }),
@@ -1015,7 +1014,6 @@ async function resetPluginData() {
       await clearAllItemTranslations();
     }
     syncPrefsPaneFromPrefs();
-    addon.hooks.onReaderTabPanelRefresh();
     addon.api.getTemporaryRefreshHandler()();
     showPromptAlert(getString("pluginData-reset-success"));
   } catch (e) {
