@@ -96,6 +96,34 @@ export type TranslateTaskProcessor = (
   data: Required<TranslateTask>,
 ) => Promise<void> | void;
 
+function maskAccessToken(token: string): string {
+  if (!token) return token;
+
+  const length = token.length;
+  if (length <= 2) return "*".repeat(length);
+
+  const visible = length <= 6 ? 1 : 3;
+  const maskedLength = length - visible * 2;
+
+  if (maskedLength <= 0) {
+    return "*".repeat(length);
+  }
+
+  return `${token.slice(0, visible)}${"*".repeat(maskedLength)}${token.slice(
+    length - visible,
+  )}`;
+}
+
+export function sanitizeTaskForLog(task: TranslateTask): TranslateTask {
+  return {
+    ...task,
+    ...(task.secret ? { secret: maskAccessToken(task.secret) } : {}),
+    extraTasks: ((task.extraTasks ?? []).map((extraTask) =>
+      sanitizeTaskForLog(extraTask),
+    ) as TranslateTask["extraTasks"]),
+  };
+}
+
 export class TranslateTaskRunner {
   protected processor: TranslateTaskProcessor;
   constructor(processor: TranslateTaskProcessor) {
@@ -128,7 +156,7 @@ export class TranslateTaskRunner {
     data.secret = getServiceSecret(data.service);
     data.status = "processing";
     try {
-      ztoolkit.log(data);
+      ztoolkit.log(sanitizeTaskForLog(data));
       await this.processor(data as Required<TranslateTask>);
       data.status = "success";
     } catch (e) {
