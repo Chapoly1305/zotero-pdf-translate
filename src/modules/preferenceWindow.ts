@@ -406,8 +406,10 @@ function onPrefsEvents(type: string, fromElement: boolean = true) {
         ) as HTMLInputElement;
         const trimmedValue = inputElem.value.trim();
         if (trimmedValue !== inputElem.value) {
-          setServiceSecret(serviceId, trimmedValue);
           inputElem.value = trimmedValue;
+        }
+        if (trimmedValue !== getServiceSecret(serviceId)) {
+          setServiceSecret(serviceId, trimmedValue);
         }
       }
       break;
@@ -466,8 +468,10 @@ function onPrefsEvents(type: string, fromElement: boolean = true) {
         ) as HTMLInputElement;
         const trimmedValue = inputElem.value.trim();
         if (trimmedValue !== inputElem.value) {
-          setServiceSecret(serviceId, trimmedValue);
           inputElem.value = trimmedValue;
+        }
+        if (trimmedValue !== getServiceSecret(serviceId)) {
+          setServiceSecret(serviceId, trimmedValue);
         }
       }
       break;

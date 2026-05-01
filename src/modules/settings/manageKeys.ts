@@ -61,7 +61,16 @@ export async function manageKeysDialog() {
       false,
     )
     .addButton(getString("service-manageKeys-close"), "close")
-    .addButton(getString("service-manageKeys-save"), "save")
+    .addButton(getString("service-manageKeys-save"), "save", {
+      callback: () => {
+        const textarea = dialog.window?.document.querySelector(
+          `textarea[data-bind="secrets"]`,
+        ) as HTMLTextAreaElement | null;
+        if (textarea) {
+          dialogData.secrets = textarea.value;
+        }
+      },
+    })
     .open(getString("service-manageKeys-title"));
 
   if (dialogData.unloadLock && dialogData.unloadLock.promise) {
